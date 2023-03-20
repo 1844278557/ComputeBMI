@@ -3,6 +3,7 @@ package com.example.myapplication;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -44,6 +45,7 @@ TextView text;
             str2="您为偏瘦，注意健康饮食，多加运动";
         }
         text.setText("您的BMI为"+String.format("%.2f",BMI)+str2);
+            Log.i("main","onClick msg...");
     }
     }
 }
