@@ -1,1 +1,1 @@
-trigger build 2026-08-19 attempt 11 dependency-force
+trigger build 2026-08-19 attempt 12 post-master-workflow
