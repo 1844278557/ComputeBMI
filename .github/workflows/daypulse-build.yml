@@ -50,6 +50,22 @@ jobs:
               s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
           if '\nkotlin {\n    compilerOptions {' not in s:
               s += '\n\nkotlin {\n    compilerOptions {\n        jvmTarget = JvmTarget.fromTarget("17")\n    }\n}\n'
+          s += '''
+
+configurations.configureEach {
+    resolutionStrategy {
+        force("androidx.core:core:1.17.0")
+        force("androidx.core:core-ktx:1.17.0")
+        force("androidx.lifecycle:lifecycle-common:2.10.0")
+        force("androidx.lifecycle:lifecycle-common-jvm:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-android:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-compose-android:2.10.0")
+    }
+}
+'''
           p.write_text(s)
           PY
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
