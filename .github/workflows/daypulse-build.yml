@@ -83,30 +83,28 @@ configurations.configureEach {
 
       - name: Verify Android API 36
         shell: bash
-        run: |
-          set -euxo pipefail
-          test -f "$ANDROID_HOME/platforms/android-36/android.jar"
+        run: test -f "$ANDROID_HOME/platforms/android-36/android.jar"
 
-      - name: Build debug APK
-        working-directory: DayPulse
-        run: gradle --no-daemon :app:assembleDebug --stacktrace
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: DayPulse-debug-apk
-          path: DayPulse/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-
-      - name: Publish APK payload to temporary branch
+      - name: Build and publish result
         shell: bash
         run: |
-          set -euxo pipefail
+          set -uo pipefail
           mkdir -p .daypulse/output
-          base64 -w 0 DayPulse/app/build/outputs/apk/debug/app-debug.apk > .daypulse/output/app-debug.apk.b64
-          sha256sum DayPulse/app/build/outputs/apk/debug/app-debug.apk > .daypulse/output/app-debug.apk.sha256
+          cd DayPulse
+          set +e
+          gradle --no-daemon :app:assembleDebug --stacktrace 2>&1 | tee /tmp/daypulse-build.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          cd ..
+          cp /tmp/daypulse-build.log .daypulse/output/build.log
+          printf '%s\n' "$STATUS" > .daypulse/output/build.status
+          if [ -f DayPulse/app/build/outputs/apk/debug/app-debug.apk ]; then
+            base64 -w 0 DayPulse/app/build/outputs/apk/debug/app-debug.apk > .daypulse/output/app-debug.apk.b64
+            sha256sum DayPulse/app/build/outputs/apk/debug/app-debug.apk > .daypulse/output/app-debug.apk.sha256
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .daypulse/output/app-debug.apk.b64 .daypulse/output/app-debug.apk.sha256
-          git commit -m "Publish DayPulse debug APK [skip ci]"
+          git add .daypulse/output
+          git commit -m "Publish DayPulse build result [skip ci]" || true
           git push origin HEAD:agent/daypulse-apk-build
+          exit "$STATUS"
