@@ -32,15 +32,16 @@ jobs:
           unzip -q /tmp/daypulse.zip -d /tmp/daypulse-src || true
           cp -a /tmp/daypulse-src/DayPulse ./DayPulse
           cp .daypulse/overrides/AppDatabase.kt DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
+          sed -i 's/version "9.3.1"/version "8.13.2"/' DayPulse/build.gradle.kts
           sed -i 's/compileSdk = 37/compileSdk = 36/' DayPulse/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' DayPulse/app/build.gradle.kts
-          printf '\nandroid.newDsl=false\n' >> DayPulse/gradle.properties
+          sed -i '/android.builtInKotlin=false/d' DayPulse/gradle.properties
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
 
-      - name: Set up Gradle 9.5.0
+      - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.5.0'
+          gradle-version: '8.13'
 
       - name: Verify Android API 36
         shell: bash
