@@ -34,6 +34,7 @@ jobs:
           cp .daypulse/overrides/AppDatabase.kt DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
           sed -i 's/compileSdk = 37/compileSdk = 36/' DayPulse/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' DayPulse/app/build.gradle.kts
+          printf '\nandroid.newDsl=false\n' >> DayPulse/gradle.properties
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
 
       - name: Set up Gradle 9.5.0
