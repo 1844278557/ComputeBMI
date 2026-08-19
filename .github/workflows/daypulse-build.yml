@@ -34,10 +34,10 @@ jobs:
           cp .daypulse/overrides/AppDatabase.kt DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
 
-      - name: Set up Gradle 9.5
+      - name: Set up Gradle 9.5.0
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.5'
+          gradle-version: '9.5.0'
 
       - name: Install Android API 37
         shell: bash
