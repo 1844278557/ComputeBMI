@@ -35,14 +35,21 @@ jobs:
           sed -i 's/version "9.3.1"/version "8.13.2"/' DayPulse/build.gradle.kts
           sed -i 's/compileSdk = 37/compileSdk = 36/' DayPulse/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.core:core-ktx:1.19.0/androidx.core:core-ktx:1.17.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.activity:activity-compose:1.12.4/androidx.activity:activity-compose:1.11.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.lifecycle:lifecycle-runtime-ktx:2.11.0/androidx.lifecycle:lifecycle-runtime-ktx:2.10.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.lifecycle:lifecycle-runtime-compose:2.11.0/androidx.lifecycle:lifecycle-runtime-compose:2.10.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.compose:compose-bom:2026.08.00/androidx.compose:compose-bom:2026.06.01/' DayPulse/app/build.gradle.kts
           sed -i '/android.builtInKotlin=false/d' DayPulse/gradle.properties
           python3 - <<'PY'
           from pathlib import Path
           p = Path('DayPulse/app/build.gradle.kts')
           s = p.read_text()
           s = s.replace('    kotlinOptions {\n        jvmTarget = "17"\n    }\n\n', '')
-          s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
-          s += '\n\nkotlin {\n    compilerOptions {\n        jvmTarget = JvmTarget.fromTarget("17")\n    }\n}\n'
+          if 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget' not in s:
+              s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
+          if '\nkotlin {\n    compilerOptions {' not in s:
+              s += '\n\nkotlin {\n    compilerOptions {\n        jvmTarget = JvmTarget.fromTarget("17")\n    }\n}\n'
           p.write_text(s)
           PY
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
