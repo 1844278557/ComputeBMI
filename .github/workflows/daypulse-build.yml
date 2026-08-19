@@ -36,6 +36,15 @@ jobs:
           sed -i 's/compileSdk = 37/compileSdk = 36/' DayPulse/app/build.gradle.kts
           sed -i 's/targetSdk = 37/targetSdk = 36/' DayPulse/app/build.gradle.kts
           sed -i '/android.builtInKotlin=false/d' DayPulse/gradle.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('DayPulse/app/build.gradle.kts')
+          s = p.read_text()
+          s = s.replace('    kotlinOptions {\n        jvmTarget = "17"\n    }\n\n', '')
+          s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
+          s += '\n\nkotlin {\n    compilerOptions {\n        jvmTarget = JvmTarget.fromTarget("17")\n    }\n}\n'
+          p.write_text(s)
+          PY
           test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
 
       - name: Set up Gradle 8.13
