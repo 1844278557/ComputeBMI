@@ -1,0 +1,93 @@
+name: DayPulse APK Build
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  build:
+    if: github.head_ref == 'agent/daypulse-apk-build'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout DayPulse build branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/daypulse-apk-build
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore DayPulse project
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat .daypulse/chunk*.b64 | base64 -d > /tmp/daypulse.zip
+          mkdir -p /tmp/daypulse-src
+          unzip -q /tmp/daypulse.zip -d /tmp/daypulse-src || true
+          cp -a /tmp/daypulse-src/DayPulse ./DayPulse
+          cp .daypulse/overrides/AppDatabase.kt DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
+          sed -i 's/version "9.3.1"/version "8.13.2"/' DayPulse/build.gradle.kts
+          sed -i 's/compileSdk = 37/compileSdk = 36/' DayPulse/app/build.gradle.kts
+          sed -i 's/targetSdk = 37/targetSdk = 36/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.core:core-ktx:1.19.0/androidx.core:core-ktx:1.17.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.activity:activity-compose:1.12.4/androidx.activity:activity-compose:1.11.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.lifecycle:lifecycle-runtime-ktx:2.11.0/androidx.lifecycle:lifecycle-runtime-ktx:2.10.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.lifecycle:lifecycle-runtime-compose:2.11.0/androidx.lifecycle:lifecycle-runtime-compose:2.10.0/' DayPulse/app/build.gradle.kts
+          sed -i 's/androidx.compose:compose-bom:2026.08.00/androidx.compose:compose-bom:2026.06.01/' DayPulse/app/build.gradle.kts
+          sed -i '/android.builtInKotlin=false/d' DayPulse/gradle.properties
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('DayPulse/app/build.gradle.kts')
+          s = p.read_text()
+          s = s.replace('    kotlinOptions {\n        jvmTarget = "17"\n    }\n\n', '')
+          if 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget' not in s:
+              s = 'import org.jetbrains.kotlin.gradle.dsl.JvmTarget\n\n' + s
+          if '\nkotlin {\n    compilerOptions {' not in s:
+              s += '\n\nkotlin {\n    compilerOptions {\n        jvmTarget = JvmTarget.fromTarget("17")\n    }\n}\n'
+          s += '''
+
+configurations.configureEach {
+    resolutionStrategy {
+        force("androidx.core:core:1.17.0")
+        force("androidx.core:core-ktx:1.17.0")
+        force("androidx.lifecycle:lifecycle-common:2.10.0")
+        force("androidx.lifecycle:lifecycle-common-jvm:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-android:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+        force("androidx.lifecycle:lifecycle-runtime-compose-android:2.10.0")
+    }
+}
+'''
+          p.write_text(s)
+          PY
+          test -s DayPulse/app/src/main/java/com/example/daypulse/data/AppDatabase.kt
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Verify Android API 36
+        shell: bash
+        run: |
+          set -euxo pipefail
+          test -f "$ANDROID_HOME/platforms/android-36/android.jar"
+
+      - name: Build debug APK
+        working-directory: DayPulse
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DayPulse-debug-apk
+          path: DayPulse/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
